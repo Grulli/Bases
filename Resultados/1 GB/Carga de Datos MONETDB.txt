@@ -1,0 +1,20 @@
++-----------------+
+| localtime       |
++=================+
+| 17:36:45.000000 |
++-----------------+
+1 tuple
+150000 affected rows
+6001215 affected rows
+25 affected rows
+1500000 affected rows
+800000 affected rows
+200000 affected rows
+5 affected rows
+10000 affected rows
++-----------------+
+| localtime       |
++=================+
+| 17:37:19.000000 |
++-----------------+
+1 tuple

@@ -1,0 +1,18 @@
+Partiendo load (Fri Jun 27 15:55:36 CLT 2014)
+psql: warning: extra command-line argument "testpch1" ignored
+COPY 150000
+psql: warning: extra command-line argument "testpch1" ignored
+COPY 6001215
+psql: warning: extra command-line argument "testpch1" ignored
+COPY 25
+psql: warning: extra command-line argument "testpch1" ignored
+COPY 1500000
+psql: warning: extra command-line argument "testpch1" ignored
+COPY 800000
+psql: warning: extra command-line argument "testpch1" ignored
+COPY 200000
+psql: warning: extra command-line argument "testpch1" ignored
+COPY 5
+psql: warning: extra command-line argument "testpch1" ignored
+COPY 10000
+Terminado load (Fri Jun 27 15:57:00 CLT 2014)
