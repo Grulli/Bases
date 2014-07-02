@@ -1,0 +1,2 @@
+Obtenidas de http://www.mysqlperformanceblog.com/2013/03/11/mysql-5-6-vs-5-5-on-the-star-schema-benchmark/
+Son queries modificadas del Star Schema Benchmark, el cual es a su vez una versión modificada del TCP-H
