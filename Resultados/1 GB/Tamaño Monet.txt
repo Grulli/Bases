@@ -1,0 +1,19 @@
+tmartinez@union:~/my-dbfarm$ du -h
+4.0K    ./testpch1/box
+8.0K    ./testpch1/sql_logs/sql
+12K     ./testpch1/sql_logs
+492K    ./testpch1/bat/01
+544M    ./testpch1/bat/15
+17M     ./testpch1/bat/11
+200K    ./testpch1/bat/02
+44K     ./testpch1/bat/14
+8.0K    ./testpch1/bat/05
+1.7M    ./testpch1/bat/13
+40K     ./testpch1/bat/BACKUP
+193M    ./testpch1/bat/10
+173M    ./testpch1/bat/07
+468K    ./testpch1/bat/12
+6.2M    ./testpch1/bat/04
+934M    ./testpch1/bat
+934M    ./testpch1
+934M    .

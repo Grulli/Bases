@@ -1,0 +1,11 @@
+testpch1=# select pg_database_size('testpch1');
+ pg_database_size
+------------------
+       1349714744
+(1 row)
+
+testpch1=# select pg_size_pretty(pg_database_size('testpch1'));
+ pg_size_pretty
+----------------
+ 1287 MB
+(1 row)
