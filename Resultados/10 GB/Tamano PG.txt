@@ -1,0 +1,12 @@
+postgres=# select pg_database_size('testpch10');
+ pg_database_size
+------------------
+      13413958456
+(1 row)
+
+postgres=# select pg_size_pretty(pg_database_size('testpch10'));
+ pg_size_pretty
+----------------
+ 12 GB
+(1 row)
+

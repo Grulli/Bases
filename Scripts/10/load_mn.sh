@@ -1,0 +1,10 @@
+SELECT localtime();
+copy into customer from '/tmp/Tables/10/customer.tbl' using DELIMITERS '|';
+copy into lineitem from '/tmp/Tables/10/lineitem.tbl' using DELIMITERS '|';
+copy into nation from '/tmp/Tables/10/nation.tbl' using DELIMITERS '|';
+copy into orders from '/tmp/Tables/10/orders.tbl' using DELIMITERS '|';
+copy into partsupp from '/tmp/Tables/10/partsupp.tbl' using DELIMITERS '|';
+copy into part from '/tmp/Tables/10/part.tbl' using DELIMITERS '|';
+copy into region from '/tmp/Tables/10/region.tbl' using DELIMITERS '|';
+copy into supplier from '/tmp/Tables/10/supplier.tbl' using DELIMITERS '|';
+SELECT localtime();

@@ -1,0 +1,23 @@
+tmartinez@union:~/Scripts/5$ mclient -d testpch5 load_mn.sh
+user(tmartinez):monetdb
+password:
++-----------------+
+| localtime       |
++=================+
+| 16:18:55.000000 |
++-----------------+
+1 tuple
+750000 affected rows
+29999795 affected rows
+25 affected rows
+7500000 affected rows
+4000000 affected rows
+1000000 affected rows
+5 affected rows
+50000 affected rows
++-----------------+
+| localtime       |
++=================+
+| 16:21:12.000000 |
++-----------------+
+1 tuple

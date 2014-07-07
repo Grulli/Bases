@@ -1,0 +1,28 @@
+postgres@union:/home/tmartinez/Scripts/5$ psql -d testpch5 -a -f load_pg.sh
+select now();
+              now
+-------------------------------
+ 2014-07-06 19:37:35.586858-04
+(1 row)
+
+copy customer from '/tmp/Tables/5/customer.tbl' WITH DELIMITER AS '|';
+COPY 750000
+copy lineitem from '/tmp/Tables/5/lineitem.tbl' WITH DELIMITER AS '|';
+COPY 29999789
+copy nation from '/tmp/Tables/5/nation.tbl' WITH DELIMITER AS '|';
+COPY 25
+copy orders from '/tmp/Tables/5/orders.tbl' WITH DELIMITER AS '|';
+COPY 7500000
+copy partsupp from '/tmp/Tables/5/partsupp.tbl' WITH DELIMITER AS '|';
+COPY 4000000
+copy part from '/tmp/Tables/5/part.tbl' WITH DELIMITER AS '|';
+COPY 1000000
+copy region from '/tmp/Tables/5/region.tbl' WITH DELIMITER AS '|';
+COPY 5
+copy supplier from '/tmp/Tables/5/supplier.tbl' WITH DELIMITER AS '|';
+COPY 50000
+select now();
+              now
+-------------------------------
+ 2014-07-06 19:45:15.768359-04
+(1 row)

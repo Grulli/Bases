@@ -1,10 +1,28 @@
+postgres@union:/home/tmartinez/tpch_2_17_0/dbgen/gen_tables$ psql -d testpch1 -a -f load_pg.sh
 select now();
+              now
+-------------------------------
+ 2014-07-03 14:29:16.155487-04
+(1 row)
+
 copy customer from '/tmp/Tables/1/customer.tbl' WITH DELIMITER AS '|';
+COPY 150000
 copy lineitem from '/tmp/Tables/1/lineitem.tbl' WITH DELIMITER AS '|';
+COPY 6001215
 copy nation from '/tmp/Tables/1/nation.tbl' WITH DELIMITER AS '|';
+COPY 25
 copy orders from '/tmp/Tables/1/orders.tbl' WITH DELIMITER AS '|';
+COPY 1500000
 copy partsupp from '/tmp/Tables/1/partsupp.tbl' WITH DELIMITER AS '|';
+COPY 800000
 copy part from '/tmp/Tables/1/part.tbl' WITH DELIMITER AS '|';
+COPY 200000
 copy region from '/tmp/Tables/1/region.tbl' WITH DELIMITER AS '|';
+COPY 5
 copy supplier from '/tmp/Tables/1/supplier.tbl' WITH DELIMITER AS '|';
+COPY 10000
 select now();
+              now
+-------------------------------
+ 2014-07-03 14:30:37.642086-04
+(1 row)
