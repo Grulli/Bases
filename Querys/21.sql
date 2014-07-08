@@ -1,3 +1,4 @@
+EXPLAIN ANALYZE
 select
 	s_name,
 	count(*) as numwait

@@ -1,3 +1,4 @@
+EXPLAIN ANALYZE
 select
 	c_custkey,
 	c_name,

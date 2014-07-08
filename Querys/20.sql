@@ -1,3 +1,4 @@
+EXPLAIN ANALYZE
 select
 	s_name,
 	s_address
@@ -17,7 +18,7 @@ where
 				from
 					part
 				where
-					p_name like 'lime%'
+					p_name like 'forest%'
 			)
 			and ps_availqty > (
 				select
@@ -32,6 +33,6 @@ where
 			)
 	)
 	and s_nationkey = n_nationkey
-	and n_name = 'VIETNAM'
+	and n_name = 'CANADA'
 order by
 	s_name;

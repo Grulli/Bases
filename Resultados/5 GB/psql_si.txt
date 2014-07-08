@@ -1,0 +1,507 @@
+\i 1.sql
+EXPLAIN ANALYZE
+select
+	l_returnflag,
+	l_linestatus,
+	sum(l_quantity) as sum_qty,
+	sum(l_extendedprice) as sum_base_price,
+	sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+	sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+	avg(l_quantity) as avg_qty,
+	avg(l_extendedprice) as avg_price,
+	avg(l_discount) as avg_disc,
+	count(*) as count_order
+from
+	lineitem
+where
+	l_shipdate <= date '1998-12-01' - interval '90 day'
+group by
+	l_returnflag,
+	l_linestatus
+order by
+	l_returnflag,
+	l_linestatus;
+                                                              QUERY PLAN                                                               
+---------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=2116876.10..2116876.12 rows=6 width=25) (actual time=164481.248..164481.249 rows=4 loops=1)
+   Sort Key: l_returnflag, l_linestatus
+   Sort Method: quicksort  Memory: 25kB
+   ->  HashAggregate  (cost=2116875.92..2116876.03 rows=6 width=25) (actual time=164481.157..164481.165 rows=4 loops=1)
+         ->  Seq Scan on lineitem  (cost=0.00..934807.80 rows=29551703 width=25) (actual time=21.523..18650.103 rows=29577558 loops=1)
+               Filter: (l_shipdate <= '1998-09-02 00:00:00'::timestamp without time zone)
+ Total runtime: 164481.562 ms
+(7 rows)
+
+\i 3.sql
+EXPLAIN ANALYZE
+select
+	l_orderkey,
+	sum(l_extendedprice * (1 - l_discount)) as revenue,
+	o_orderdate,
+	o_shippriority
+from
+	customer,
+	orders,
+	lineitem
+where
+	c_mktsegment = 'HOUSEHOLD'
+	and c_custkey = o_custkey
+	and l_orderkey = o_orderkey
+	and o_orderdate < date '1995-03-29'
+	and l_shipdate > date '1995-03-29'
+group by
+	l_orderkey,
+	o_orderdate,
+	o_shippriority
+order by
+	revenue desc,
+	o_orderdate
+limit 10;;
+                                                                            QUERY PLAN                                                                             
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1804120.88..1804120.90 rows=10 width=24) (actual time=24692.378..24692.381 rows=10 loops=1)
+   ->  Sort  (cost=1804120.88..1807968.93 rows=1539222 width=24) (actual time=24692.377..24692.378 rows=10 loops=1)
+         Sort Key: (sum((lineitem.l_extendedprice * (1::numeric - lineitem.l_discount)))), orders.o_orderdate
+         Sort Method: top-N heapsort  Memory: 25kB
+         ->  GroupAggregate  (cost=1728530.24..1770858.84 rows=1539222 width=24) (actual time=24474.247..24674.280 rows=56339 loops=1)
+               ->  Sort  (cost=1728530.24..1732378.29 rows=1539222 width=24) (actual time=24474.229..24521.969 rows=148615 loops=1)
+                     Sort Key: lineitem.l_orderkey, orders.o_orderdate, orders.o_shippriority
+                     Sort Method: external merge  Disk: 5368kB
+                     ->  Hash Join  (cost=337910.10..1507213.16 rows=1539222 width=24) (actual time=7967.923..24287.762 rows=148615 loops=1)
+                           Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                           ->  Seq Scan on lineitem  (cost=0.00..934807.80 rows=15949612 width=16) (actual time=0.012..9452.572 rows=15993641 loops=1)
+                                 Filter: (l_shipdate > '1995-03-29'::date)
+                           ->  Hash  (cost=325329.33..325329.33 rows=723741 width=12) (actual time=7950.268..7950.268 rows=732999 loops=1)
+                                 Buckets: 4096  Batches: 64  Memory Usage: 503kB
+                                 ->  Hash Join  (cost=29707.88..325329.33 rows=723741 width=12) (actual time=867.826..7710.031 rows=732999 loops=1)
+                                       Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                       ->  Seq Scan on orders  (cost=0.00..224203.66 rows=3683785 width=16) (actual time=24.652..4714.962 rows=3688103 loops=1)
+                                             Filter: (o_orderdate < '1995-03-29'::date)
+                                       ->  Hash  (cost=27290.00..27290.00 rows=147350 width=4) (actual time=842.735..842.735 rows=149687 loops=1)
+                                             Buckets: 4096  Batches: 8  Memory Usage: 665kB
+                                             ->  Seq Scan on customer  (cost=0.00..27290.00 rows=147350 width=4) (actual time=23.736..762.300 rows=149687 loops=1)
+                                                   Filter: (c_mktsegment = 'HOUSEHOLD'::bpchar)
+ Total runtime: 24695.155 ms
+(23 rows)
+
+\i 4.sql
+EXPLAIN ANALYZE
+select
+	o_orderpriority,
+	count(*) as order_count
+from
+	orders
+where
+	o_orderdate >= date '1997-07-01'
+	and o_orderdate < date '1997-07-01' + interval '3 month'
+	and exists (
+		select
+			*
+		from
+			lineitem
+		where
+			l_orderkey = o_orderkey
+			and l_commitdate < l_receiptdate
+	)
+group by
+	o_orderpriority
+order by
+	o_orderpriority;
+                                                                   QUERY PLAN                                                                    
+-------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=1389896.36..1389896.37 rows=1 width=16) (actual time=19294.902..19294.902 rows=5 loops=1)
+   Sort Key: orders.o_orderpriority
+   Sort Method: quicksort  Memory: 25kB
+   ->  HashAggregate  (cost=1389896.34..1389896.35 rows=1 width=16) (actual time=19294.879..19294.881 rows=5 loops=1)
+         ->  Hash Semi Join  (cost=1098875.40..1389819.01 rows=15466 width=16) (actual time=14968.778..19212.070 rows=262599 loops=1)
+               Hash Cond: (orders.o_orderkey = lineitem.l_orderkey)
+               ->  Seq Scan on orders  (cost=0.00..242952.39 rows=276403 width=20) (actual time=0.033..1467.030 rows=286549 loops=1)
+                     Filter: ((o_orderdate >= '1997-07-01'::date) AND (o_orderdate < '1997-10-01 00:00:00'::timestamp without time zone))
+               ->  Hash  (cost=934807.80..934807.80 rows=10000288 width=4) (actual time=14962.769..14962.769 rows=18968099 loops=1)
+                     Buckets: 4096  Batches: 1024 (originally 512)  Memory Usage: 1025kB
+                     ->  Seq Scan on lineitem  (cost=0.00..934807.80 rows=10000288 width=4) (actual time=0.021..10159.220 rows=18968099 loops=1)
+                           Filter: (l_commitdate < l_receiptdate)
+ Total runtime: 19294.976 ms
+(13 rows)
+
+\i 6.sql
+EXPLAIN ANALYZE
+select
+	sum(l_extendedprice * l_discount) as revenue
+from
+	lineitem
+where
+	l_shipdate >= date '1994-01-01'
+	and l_shipdate < date '1994-01-01' + interval '1 year'
+	and l_discount between 0.06 - 0.01 and 0.06 + 0.01
+	and l_quantity < 24;
+                                                                                                 QUERY PLAN                                                                                                  
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=1237725.30..1237725.31 rows=1 width=12) (actual time=9534.851..9534.851 rows=1 loops=1)
+   ->  Seq Scan on lineitem  (cost=0.00..1234816.44 rows=581773 width=12) (actual time=0.054..9104.771 rows=569999 loops=1)
+         Filter: ((l_shipdate >= '1994-01-01'::date) AND (l_shipdate < '1995-01-01 00:00:00'::timestamp without time zone) AND (l_discount >= 0.05) AND (l_discount <= 0.07) AND (l_quantity < 24::numeric))
+ Total runtime: 9534.900 ms
+(4 rows)
+
+\i 7.sql
+EXPLAIN ANALYZE
+select
+	supp_nation,
+	cust_nation,
+	l_year,
+	sum(volume) as revenue
+from
+	(
+		select
+			n1.n_name as supp_nation,
+			n2.n_name as cust_nation,
+			extract(year from l_shipdate) as l_year,
+			l_extendedprice * (1 - l_discount) as volume
+		from
+			supplier,
+			lineitem,
+			orders,
+			customer,
+			nation n1,
+			nation n2
+		where
+			s_suppkey = l_suppkey
+			and o_orderkey = l_orderkey
+			and c_custkey = o_custkey
+			and s_nationkey = n1.n_nationkey
+			and c_nationkey = n2.n_nationkey
+			and (
+				(n1.n_name = 'FRANCE' and n2.n_name = 'GERMANY')
+				or (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')
+			)
+			and l_shipdate between date '1995-01-01' and date '1996-12-31'
+	) as shipping
+group by
+	supp_nation,
+	cust_nation,
+	l_year
+order by
+	supp_nation,
+	cust_nation,
+	l_year;
+                                                                                                  QUERY PLAN                                                                                                   
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ GroupAggregate  (cost=1464674.38..1464694.46 rows=618 width=224) (actual time=17814.222..17915.553 rows=4 loops=1)
+   ->  Sort  (cost=1464674.38..1464675.92 rows=618 width=224) (actual time=17773.743..17878.397 rows=29439 loops=1)
+         Sort Key: n1.n_name, n2.n_name, (date_part('year'::text, (lineitem.l_shipdate)::timestamp without time zone))
+         Sort Method: external merge  Disk: 2584kB
+         ->  Hash Join  (cost=370572.42..1464645.73 rows=618 width=224) (actual time=6357.343..17103.778 rows=29439 loops=1)
+               Hash Cond: ((orders.o_custkey = customer.c_custkey) AND (n2.n_nationkey = customer.c_nationkey))
+               ->  Hash Join  (cost=330977.42..1413439.36 rows=105105 width=232) (actual time=3925.620..16055.963 rows=727693 loops=1)
+                     Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                     ->  Hash Join  (cost=2483.83..1046847.28 rows=105105 width=232) (actual time=73.610..10618.017 rows=727693 loops=1)
+                           Hash Cond: (lineitem.l_suppkey = supplier.s_suppkey)
+                           ->  Seq Scan on lineitem  (cost=0.00..1009809.96 rows=8934092 width=24) (actual time=0.022..8465.146 rows=9113214 loops=1)
+                                 Filter: ((l_shipdate >= '1995-01-01'::date) AND (l_shipdate <= '1996-12-31'::date))
+                           ->  Hash  (cost=2476.48..2476.48 rows=588 width=216) (actual time=73.555..73.555 rows=3992 loops=1)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 359kB
+                                 ->  Hash Join  (cost=674.10..2476.48 rows=588 width=216) (actual time=21.452..71.767 rows=3992 loops=1)
+                                       Hash Cond: (supplier.s_nationkey = n1.n_nationkey)
+                                       ->  Seq Scan on supplier  (cost=0.00..1609.00 rows=50000 width=8) (actual time=20.813..57.928 rows=50000 loops=1)
+                                       ->  Hash  (cost=674.08..674.08 rows=2 width=216) (actual time=0.593..0.593 rows=2 loops=1)
+                                             Buckets: 1024  Batches: 1  Memory Usage: 1kB
+                                             ->  Nested Loop  (cost=0.00..674.08 rows=2 width=216) (actual time=0.207..0.586 rows=2 loops=1)
+                                                   Join Filter: (((n1.n_name = 'FRANCE'::bpchar) AND (n2.n_name = 'GERMANY'::bpchar)) OR ((n1.n_name = 'GERMANY'::bpchar) AND (n2.n_name = 'FRANCE'::bpchar)))
+                                                   ->  Seq Scan on nation n1  (cost=0.00..11.70 rows=170 width=108) (actual time=0.012..0.019 rows=25 loops=1)
+                                                   ->  Materialize  (cost=0.00..12.55 rows=170 width=108) (actual time=0.001..0.008 rows=25 loops=25)
+                                                         ->  Seq Scan on nation n2  (cost=0.00..11.70 rows=170 width=108) (actual time=0.003..0.013 rows=25 loops=1)
+                     ->  Hash  (cost=205454.93..205454.93 rows=7499493 width=8) (actual time=3819.610..3819.610 rows=7500000 loops=1)
+                           Buckets: 4096  Batches: 512  Memory Usage: 586kB
+                           ->  Seq Scan on orders  (cost=0.00..205454.93 rows=7499493 width=8) (actual time=0.019..1795.788 rows=7500000 loops=1)
+               ->  Hash  (cost=25415.00..25415.00 rows=750000 width=8) (actual time=407.106..407.106 rows=750000 loops=1)
+                     Buckets: 4096  Batches: 32  Memory Usage: 929kB
+                     ->  Seq Scan on customer  (cost=0.00..25415.00 rows=750000 width=8) (actual time=0.013..210.853 rows=750000 loops=1)
+ Total runtime: 17916.411 ms
+(31 rows)
+
+\i 10.sql
+EXPLAIN ANALYZE
+select
+	c_custkey,
+	c_name,
+	sum(l_extendedprice * (1 - l_discount)) as revenue,
+	c_acctbal,
+	n_name,
+	c_address,
+	c_phone,
+	c_comment
+from
+	customer,
+	orders,
+	lineitem,
+	nation
+where
+	c_custkey = o_custkey
+	and l_orderkey = o_orderkey
+	and o_orderdate >= date '1993-03-01'
+	and o_orderdate < date '1993-03-01' + interval '3 month'
+	and l_returnflag = 'R'
+	and c_nationkey = n_nationkey
+group by
+	c_custkey,
+	c_name,
+	c_acctbal,
+	c_phone,
+	n_name,
+	c_address,
+	c_comment
+order by
+	revenue desc
+limit 20;
+                                                                               QUERY PLAN                                                                               
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=1542728.20..1542728.25 rows=20 width=259) (actual time=27788.214..27788.221 rows=20 loops=1)
+   ->  Sort  (cost=1542728.20..1543443.10 rows=285960 width=259) (actual time=27788.211..27788.213 rows=20 loops=1)
+         Sort Key: (sum((lineitem.l_extendedprice * (1::numeric - lineitem.l_discount))))
+         Sort Method: top-N heapsort  Memory: 30kB
+         ->  GroupAggregate  (cost=1524395.40..1535118.90 rows=285960 width=259) (actual time=26375.445..27677.842 rows=191325 loops=1)
+               ->  Sort  (cost=1524395.40..1525110.30 rows=285960 width=259) (actual time=26375.421..26878.407 rows=575176 loops=1)
+                     Sort Key: customer.c_custkey, customer.c_name, customer.c_acctbal, customer.c_phone, nation.n_name, customer.c_address, customer.c_comment
+                     Sort Method: external merge  Disk: 109576kB
+                     ->  Hash Join  (cost=298615.83..1392912.63 rows=285960 width=259) (actual time=2566.107..14969.549 rows=575176 loops=1)
+                           Hash Cond: (customer.c_nationkey = nation.n_nationkey)
+                           ->  Hash Join  (cost=298602.01..1388966.85 rows=285960 width=159) (actual time=2566.059..14725.381 rows=575176 loops=1)
+                                 Hash Cond: (orders.o_custkey = customer.c_custkey)
+                                 ->  Hash Join  (cost=247698.01..1314508.01 rows=285960 width=16) (actual time=1682.459..13201.149 rows=575176 loops=1)
+                                       Hash Cond: (lineitem.l_orderkey = orders.o_orderkey)
+                                       ->  Seq Scan on lineitem  (cost=0.00..934807.80 rows=7414213 width=16) (actual time=0.024..7975.266 rows=7406352 loops=1)
+                                             Filter: (l_returnflag = 'R'::bpchar)
+                                       ->  Hash  (cost=242952.39..242952.39 rows=289249 width=8) (actual time=1681.825..1681.825 rows=287056 loops=1)
+                                             Buckets: 4096  Batches: 16  Memory Usage: 707kB
+                                             ->  Seq Scan on orders  (cost=0.00..242952.39 rows=289249 width=8) (actual time=0.014..1590.490 rows=287056 loops=1)
+                                                   Filter: ((o_orderdate >= '1993-03-01'::date) AND (o_orderdate < '1993-06-01 00:00:00'::timestamp without time zone))
+                                 ->  Hash  (cost=25415.00..25415.00 rows=750000 width=147) (actual time=783.968..783.968 rows=750000 loops=1)
+                                       Buckets: 1024  Batches: 256  Memory Usage: 557kB
+                                       ->  Seq Scan on customer  (cost=0.00..25415.00 rows=750000 width=147) (actual time=0.021..249.672 rows=750000 loops=1)
+                           ->  Hash  (cost=11.70..11.70 rows=170 width=108) (actual time=0.037..0.037 rows=25 loops=1)
+                                 Buckets: 1024  Batches: 1  Memory Usage: 2kB
+                                 ->  Seq Scan on nation  (cost=0.00..11.70 rows=170 width=108) (actual time=0.008..0.014 rows=25 loops=1)
+ Total runtime: 27821.609 ms
+(27 rows)
+
+\i 11.sql
+EXPLAIN ANALYZE
+select
+	ps_partkey,
+	sum(ps_supplycost * ps_availqty) as value
+from
+	partsupp,
+	supplier,
+	nation
+where
+	ps_suppkey = s_suppkey
+	and s_nationkey = n_nationkey
+	and n_name = 'GERMANY'
+group by
+	ps_partkey having
+		sum(ps_supplycost * ps_availqty) > (
+			select
+				sum(ps_supplycost * ps_availqty) * 0.0001000000
+			from
+				partsupp,
+				supplier,
+				nation
+			where
+				ps_suppkey = s_suppkey
+				and s_nationkey = n_nationkey
+				and n_name = 'GERMANY'
+		)
+order by
+	value desc;
+                                                                    QUERY PLAN                                                                    
+--------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=292843.58..292902.11 rows=23414 width=14) (actual time=5965.595..5965.595 rows=0 loops=1)
+   Sort Key: (sum((public.partsupp.ps_supplycost * (public.partsupp.ps_availqty)::numeric)))
+   Sort Method: quicksort  Memory: 25kB
+   InitPlan 1 (returns $0)
+     ->  Aggregate  (cost=144429.83..144429.84 rows=1 width=10) (actual time=1679.665..1679.665 rows=1 loops=1)
+           ->  Hash Join  (cost=1815.25..144254.22 rows=23414 width=10) (actual time=20.094..1550.900 rows=160240 loops=1)
+                 Hash Cond: (public.partsupp.ps_suppkey = public.supplier.s_suppkey)
+                 ->  Seq Scan on partsupp  (cost=0.00..127203.85 rows=4000285 width=14) (actual time=0.014..818.745 rows=4000000 loops=1)
+                 ->  Hash  (cost=1811.58..1811.58 rows=294 width=4) (actual time=20.060..20.060 rows=2003 loops=1)
+                       Buckets: 1024  Batches: 1  Memory Usage: 71kB
+                       ->  Hash Join  (cost=12.14..1811.58 rows=294 width=4) (actual time=0.038..19.464 rows=2003 loops=1)
+                             Hash Cond: (public.supplier.s_nationkey = public.nation.n_nationkey)
+                             ->  Seq Scan on supplier  (cost=0.00..1609.00 rows=50000 width=8) (actual time=0.010..10.269 rows=50000 loops=1)
+                             ->  Hash  (cost=12.12..12.12 rows=1 width=4) (actual time=0.013..0.013 rows=1 loops=1)
+                                   Buckets: 1024  Batches: 1  Memory Usage: 1kB
+                                   ->  Seq Scan on nation  (cost=0.00..12.12 rows=1 width=4) (actual time=0.009..0.011 rows=1 loops=1)
+                                         Filter: (n_name = 'GERMANY'::bpchar)
+   ->  GroupAggregate  (cost=145953.50..146714.46 rows=23414 width=14) (actual time=5965.588..5965.588 rows=0 loops=1)
+         Filter: (sum((public.partsupp.ps_supplycost * (public.partsupp.ps_availqty)::numeric)) > $0)
+         ->  Sort  (cost=145953.50..146012.04 rows=23414 width=14) (actual time=4126.744..4155.462 rows=160240 loops=1)
+               Sort Key: public.partsupp.ps_partkey
+               Sort Method: external sort  Disk: 4072kB
+               ->  Hash Join  (cost=1815.25..144254.22 rows=23414 width=14) (actual time=108.580..3894.731 rows=160240 loops=1)
+                     Hash Cond: (public.partsupp.ps_suppkey = public.supplier.s_suppkey)
+                     ->  Seq Scan on partsupp  (cost=0.00..127203.85 rows=4000285 width=18) (actual time=84.555..2714.573 rows=4000000 loops=1)
+                     ->  Hash  (cost=1811.58..1811.58 rows=294 width=4) (actual time=23.998..23.998 rows=2003 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 71kB
+                           ->  Hash Join  (cost=12.14..1811.58 rows=294 width=4) (actual time=0.082..23.347 rows=2003 loops=1)
+                                 Hash Cond: (public.supplier.s_nationkey = public.nation.n_nationkey)
+                                 ->  Seq Scan on supplier  (cost=0.00..1609.00 rows=50000 width=8) (actual time=0.022..12.407 rows=50000 loops=1)
+                                 ->  Hash  (cost=12.12..12.12 rows=1 width=4) (actual time=0.025..0.025 rows=1 loops=1)
+                                       Buckets: 1024  Batches: 1  Memory Usage: 1kB
+                                       ->  Seq Scan on nation  (cost=0.00..12.12 rows=1 width=4) (actual time=0.016..0.023 rows=1 loops=1)
+                                             Filter: (n_name = 'GERMANY'::bpchar)
+ Total runtime: 5966.929 ms
+(35 rows)
+
+\i 15.sql
+create view revenue0 (supplier_no, total_revenue) as
+	select
+		l_suppkey,
+		sum(l_extendedprice * (1 - l_discount))
+	from
+		lineitem
+	where
+		l_shipdate >= date '1995-12-01'
+		and l_shipdate < date '1995-12-01' + interval '3 month'
+	group by
+		l_suppkey;
+CREATE VIEW
+
+EXPLAIN ANALYZE
+select
+	s_suppkey,
+	s_name,
+	s_address,
+	s_phone,
+	total_revenue
+from
+	supplier,
+	revenue0
+where
+	s_suppkey = supplier_no
+	and total_revenue = (
+		select
+			max(total_revenue)
+		from
+			revenue0
+	)
+order by
+	s_suppkey;
+                                                                   QUERY PLAN                                                                   
+------------------------------------------------------------------------------------------------------------------------------------------------
+ Merge Join  (cost=2059318.20..2059597.06 rows=1924 width=104) (actual time=19215.691..19215.693 rows=1 loops=1)
+   Merge Cond: (supplier.s_suppkey = revenue0.supplier_no)
+   InitPlan 1 (returns $0)
+     ->  Aggregate  (cost=1021469.37..1021469.38 rows=1 width=32) (actual time=9594.106..9594.106 rows=1 loops=1)
+           ->  HashAggregate  (cost=1021426.08..1021445.32 rows=1924 width=16) (actual time=9571.932..9587.717 rows=50000 loops=1)
+                 ->  Seq Scan on lineitem  (cost=0.00..1009809.96 rows=1161612 width=16) (actual time=0.016..7799.858 rows=1130590 loops=1)
+                       Filter: ((l_shipdate >= '1995-12-01'::date) AND (l_shipdate < '1996-03-01 00:00:00'::timestamp without time zone))
+   ->  Sort  (cost=7562.41..7687.41 rows=50000 width=72) (actual time=60.938..67.046 rows=32896 loops=1)
+         Sort Key: supplier.s_suppkey
+         Sort Method: external sort  Disk: 4008kB
+         ->  Seq Scan on supplier  (cost=0.00..1609.00 rows=50000 width=72) (actual time=0.046..15.960 rows=50000 loops=1)
+   ->  Sort  (cost=1030286.41..1030291.22 rows=1924 width=36) (actual time=19144.891..19144.891 rows=1 loops=1)
+         Sort Key: revenue0.supplier_no
+         Sort Method: quicksort  Memory: 25kB
+         ->  Subquery Scan on revenue0  (cost=1030138.17..1030181.46 rows=1924 width=36) (actual time=19136.652..19144.877 rows=1 loops=1)
+               ->  HashAggregate  (cost=1030138.17..1030162.22 rows=1924 width=16) (actual time=19136.651..19144.876 rows=1 loops=1)
+                     Filter: (sum((public.lineitem.l_extendedprice * (1::numeric - public.lineitem.l_discount))) = $0)
+                     ->  Seq Scan on lineitem  (cost=0.00..1009809.96 rows=1161612 width=16) (actual time=0.020..7751.890 rows=1130590 loops=1)
+                           Filter: ((l_shipdate >= '1995-12-01'::date) AND (l_shipdate < '1996-03-01 00:00:00'::timestamp without time zone))
+ Total runtime: 19217.033 ms
+(20 rows)
+
+
+
+drop view revenue0;
+DROP VIEW
+\i 19.sql
+EXPLAIN ANALYZE
+select
+	sum(l_extendedprice* (1 - l_discount)) as revenue
+from
+	lineitem,
+	part
+where
+	(
+		p_partkey = l_partkey
+		and p_brand = 'Brand#23'
+		and p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
+		and l_quantity >= 1 and l_quantity <= 1 + 10
+		and p_size between 1 and 5
+		and l_shipmode in ('AIR', 'AIR REG')
+		and l_shipinstruct = 'DELIVER IN PERSON'
+	)
+	or
+	(
+		p_partkey = l_partkey
+		and p_brand = 'Brand#15'
+		and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
+		and l_quantity >= 10 and l_quantity <= 10 + 10
+		and p_size between 1 and 10
+		and l_shipmode in ('AIR', 'AIR REG')
+		and l_shipinstruct = 'DELIVER IN PERSON'
+	)
+	or
+	(
+		p_partkey = l_partkey
+		and p_brand = 'Brand#44'
+		and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
+		and l_quantity >= 20 and l_quantity <= 20 + 10
+		and p_size between 1 and 15
+		and l_shipmode in ('AIR', 'AIR REG')
+		and l_shipinstruct = 'DELIVER IN PERSON'
+	);
+                                                                                                                                                                                                                                                                                                                                                               QUERY PLAN                                                                                                                                                                                                                                                                                                                                                               
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=1152870.48..1152870.49 rows=1 width=12) (actual time=13023.379..13023.379 rows=1 loops=1)
+   ->  Hash Join  (cost=52318.00..1152866.29 rows=559 width=12) (actual time=1042.705..13022.530 rows=575 loops=1)
+         Hash Cond: (lineitem.l_partkey = part.p_partkey)
+         Join Filter: (((part.p_brand = 'Brand#23'::bpchar) AND (part.p_container = ANY ('{"SM CASE","SM BOX","SM PACK","SM PKG"}'::bpchar[])) AND (lineitem.l_quantity >= 1::numeric) AND (lineitem.l_quantity <= 11::numeric) AND (part.p_size <= 5)) OR ((part.p_brand = 'Brand#15'::bpchar) AND (part.p_container = ANY ('{"MED BAG","MED BOX","MED PKG","MED PACK"}'::bpchar[])) AND (lineitem.l_quantity >= 10::numeric) AND (lineitem.l_quantity <= 20::numeric) AND (part.p_size <= 10)) OR ((part.p_brand = 'Brand#44'::bpchar) AND (part.p_container = ANY ('{"LG CASE","LG BOX","LG PACK","LG PKG"}'::bpchar[])) AND (lineitem.l_quantity >= 20::numeric) AND (lineitem.l_quantity <= 30::numeric) AND (part.p_size <= 15)))
+         ->  Seq Scan on lineitem  (cost=0.00..1009809.96 rows=1059116 width=21) (actual time=0.015..10747.261 rows=1072367 loops=1)
+               Filter: ((l_shipmode = ANY ('{AIR,"AIR REG"}'::bpchar[])) AND (l_shipinstruct = 'DELIVER IN PERSON'::bpchar))
+         ->  Hash  (cost=32982.00..32982.00 rows=1000000 width=30) (actual time=985.014..985.014 rows=1000000 loops=1)
+               Buckets: 2048  Batches: 64  Memory Usage: 993kB
+               ->  Seq Scan on part  (cost=0.00..32982.00 rows=1000000 width=30) (actual time=34.744..600.480 rows=1000000 loops=1)
+                     Filter: (p_size >= 1)
+ Total runtime: 13023.420 ms
+(11 rows)
+
+\i 20.sql
+EXPLAIN ANALYZE
+select
+	s_name,
+	s_address
+from
+	supplier,
+	nation
+where
+	s_suppkey in (
+		select
+			ps_suppkey
+		from
+			partsupp
+		where
+			ps_partkey in (
+				select
+					p_partkey
+				from
+					part
+				where
+					p_name like 'forest%'
+			)
+			and ps_availqty > (
+				select
+					0.5 * sum(l_quantity)
+				from
+					lineitem
+				where
+					l_partkey = ps_partkey
+					and l_suppkey = ps_suppkey
+					and l_shipdate >= date '1993-01-01'
+					and l_shipdate < date '1993-01-01' + interval '1 year'
+			)
+	)
+	and s_nationkey = n_nationkey
+	and n_name = 'CANADA'
+order by
+	s_name;

@@ -10,7 +10,7 @@ create view revenue0 (supplier_no, total_revenue) as
 	group by
 		l_suppkey;
 
-
+EXPLAIN ANALYZE
 select
 	s_suppkey,
 	s_name,
@@ -30,5 +30,6 @@ where
 	)
 order by
 	s_suppkey;
+
 
 drop view revenue0;

@@ -212,3 +212,7 @@ $RECYCLE.BIN/
 *.msi
 *.msm
 *.msp
+Scripts/5/xaa
+Scripts/5/xae
+*.tbl
+tpch_2_17_0/dbgen/tablas5.zip

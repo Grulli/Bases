@@ -1,0 +1,1 @@
+ mclient -d testpch10 -s "select * from sys.querylog_history;" > monet.txt

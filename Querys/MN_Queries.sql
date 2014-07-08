@@ -1,4 +1,6 @@
-SELECT localtime();
+call sys.querylog_enable();
+call sys.querylog_empty();
+
 select
 	l_returnflag,
 	l_linestatus,
@@ -20,7 +22,7 @@ group by
 order by
 	l_returnflag,
 	l_linestatus;
-SELECT localtime();
+
 select
 	l_orderkey,
 	sum(l_extendedprice * (1 - l_discount)) as revenue,
@@ -44,7 +46,7 @@ order by
 	revenue desc,
 	o_orderdate
 limit 10;
-SELECT localtime();
+
 select
 	o_orderpriority,
 	count(*) as order_count
@@ -66,7 +68,7 @@ group by
 	o_orderpriority
 order by
 	o_orderpriority;
-SELECT localtime();
+
 select
 	sum(l_extendedprice * l_discount) as revenue
 from
@@ -76,7 +78,7 @@ where
 	and l_shipdate < date '1994-01-01' + interval '1' year
 	and l_discount between .06 - 0.01 and .06 + 0.01
 	and l_quantity < 24;
-SELECT localtime();
+
 select
 	supp_nation,
 	cust_nation,
@@ -116,7 +118,7 @@ order by
 	supp_nation,
 	cust_nation,
 	l_year;
-SELECT localtime();
+
 select
 	c_custkey,
 	c_name,
@@ -150,7 +152,6 @@ order by
 	revenue desc
 limit 20;
 
-SELECT localtime();
 select
 	ps_partkey,
 	sum(ps_supplycost * ps_availqty) as value
@@ -178,7 +179,7 @@ group by
 		)
 order by
 	value desc;
-SELECT localtime();
+
 create view revenue0 (supplier_no, total_revenue) as
 	select
 		l_suppkey,
@@ -213,7 +214,7 @@ order by
 	s_suppkey;
 
 drop view revenue0;
-SELECT localtime();
+
 select
 	sum(l_extendedprice* (1 - l_discount)) as revenue
 from
@@ -249,7 +250,7 @@ where
 		and l_shipmode in ('AIR', 'AIR REG')
 		and l_shipinstruct = 'DELIVER IN PERSON'
 	);
-SELECT localtime();
+
 select
 	s_name,
 	s_address
@@ -288,7 +289,6 @@ where
 order by
 	s_name;
 
-SELECT localtime();
 select
 	s_name,
 	count(*) as numwait
@@ -329,7 +329,7 @@ order by
 	numwait desc,
 	s_name
 limit 100;
-SELECT localtime();
+
 select
 	cntrycode,
 	count(*) as numcust,
@@ -367,4 +367,3 @@ group by
 	cntrycode
 order by
 	cntrycode;
-SELECT localtime();
